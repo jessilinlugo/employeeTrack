@@ -25,7 +25,7 @@ const initQueries = () => {
         return roleArray;
     });
 
-    connection.query("SELECT CONCAT_WS(', ', employee.last_name, employee.first_name) AS `Name`, employee.id as `ID` FROM employee ORDER BY `Name`", (err, results) => {
+    connection.query("SELECT CONCAT_WS(', ', employee.first_name, employee.last_name) AS `Name`, employee.id as `ID` FROM employee ORDER BY `Name`", (err, results) => {
         employeeArray = [];
         results.forEach(({ Name, ID }) => {
             employeeArray.push(`${ID}: ${Name}`);
@@ -33,7 +33,7 @@ const initQueries = () => {
         return employeeArray;
     });
 
-    connection.query("SELECT CONCAT_WS(', ', employee.last_name, employee.first_name) AS `Name`, employee.id as `ID` FROM employee WHERE employee.role_id = 1 ORDER BY `Name`", (err, results) => {
+    connection.query("SELECT CONCAT_WS(', ', employee.first_name, employee.last_name) AS `Name`, employee.id as `ID` FROM employee WHERE employee.role_id = 1 ORDER BY `Name`", (err, results) => {
         mgmtArray = [];
         results.forEach(({ Name, ID }) => {
             mgmtArray.push(`${ID}: ${Name}`);
@@ -43,7 +43,7 @@ const initQueries = () => {
 
     connection.query("SELECT department.name AS `Department`, department.id AS `ID` FROM department ORDER BY `ID`", (err, results) => {
         deptArray = [];
-        results.forEach(({Department, ID}) => {
+        results.forEach(({ Department, ID }) => {
             deptArray.push(`${ID}: ${Department}`);
         });
         return deptArray;
@@ -55,23 +55,23 @@ const initQueries = () => {
 
 const init = () => {
     inquirer.prompt({
-       type: "list",
-       name: "options",
-       message: "Where would you like to start?",
-       choices: [
-           "Add",
-           "View",
-           "Update",
-           "Finish"
-       ]
+        type: "list",
+        name: "option",
+        message: "Where would you like to start?",
+        choices: [
+            "Add",
+            "View",
+            "Update",
+            "Finish"
+        ]
     }).then((answer) => {
-        if (answer.action === "Add") {
+        if (answer.option === "Add") {
             addToList();
         }
-        else if (answer.action === "View") {
+        else if (answer.option === "View") {
             viewList();
         }
-        else if (answer.action === "Update") {
+        else if (answer.option === "Update") {
             updateList();
         }
         else {
@@ -79,6 +79,65 @@ const init = () => {
         }
     });
 };
+
+const updateList = () => {
+    inquirer.prompt({
+        type: "list",
+        name: "update",
+        message: "Which would you like to update?",
+        choices: [
+            "Role",
+            "Manager"
+        ]
+    }).then((answer) => {
+        if (answer.update === "Role") {
+            updateRole();
+        }
+        else if (answer.update === "Manager") {
+            updateMgmt();
+        }
+    });
+};
+
+const updateRole = () => {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "option",
+            choices: employeeArray,
+            message: "Select an Employee to Update",
+        },
+        {
+            type: "list",
+            name: "role_id",
+            choices: roleArray,
+            message: "Please provide the Employee's New Role"
+        }
+    ]).then((answer) => {
+        let employeeAns = answer.choice.split(":").join(",").split(", ");
+        let roleAns = answer.role_id.split(":").join(",").split(", ");
+        connection.query(
+            "UPDATE employee SET ? WHERE ? AND ?", [
+            {
+                role_id: roleAns[0]
+            },
+            {
+                first_name: employeeAns[1]
+            },
+            {
+                last_name: employeeAns[2]
+            }
+        ],
+            (err, res) => {
+                if (err) throw err;
+                console.log(`~* ${employeeAns[1]} ${employeeAns[2]}'s role is now ${roleAns[1]} *~`);
+
+                initQueries();
+            }
+        );
+    });
+};
+
 
 
 
