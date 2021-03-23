@@ -8,11 +8,11 @@ let mgmtArray = []
 let deptArray = []
 
 const connection = mysql.createConnection({
-    host: 'localhost',
+    host: "localhost",
     port: 3306,
-    user: 'root',
-    password: '@ng3l',
-    database: 'employeeTrackDB'
+    user: "root",
+    password: "@ng3l",
+    database: "employeeTrackDB"
 });
 
 const initQueries = () => {
@@ -49,10 +49,40 @@ const initQueries = () => {
         return deptArray;
     });
 
-}
+    init()
+
+};
+
+const init = () => {
+    inquirer.prompt({
+       type: "list",
+       name: "options",
+       message: "Where would you like to start?",
+       choices: [
+           "Add",
+           "View",
+           "Update",
+           "Finish"
+       ]
+    }).then((answer) => {
+        if (answer.action === "Add") {
+            addToList();
+        }
+        else if (answer.action === "View") {
+            viewList();
+        }
+        else if (answer.action === "Update") {
+            updateList();
+        }
+        else {
+            connection.end();
+        }
+    });
+};
 
 
 
 connection.connect((err) => {
     if (err) throw err;
+    initQueries()
 });
