@@ -15,7 +15,7 @@ const connection = mysql.createConnection({
     database: "employeeTrackDB"
 });
 
-const initQueries = () => {
+const start = () => {
 
     connection.query("SELECT role.title AS `Title`, role.id AS `ID` FROM role ORDER BY `ID`", (err, results) => {
         roleArray = [];
@@ -56,7 +56,7 @@ const initQueries = () => {
 const init = () => {
     inquirer.prompt({
         type: "list",
-        name: "option",
+        name: "choice",
         message: "Where would you like to start?",
         choices: [
             "Add",
@@ -65,13 +65,13 @@ const init = () => {
             "Finish"
         ]
     }).then((answer) => {
-        if (answer.option === "Add") {
+        if (answer.choice === "Add") {
             addToList();
         }
-        else if (answer.option === "View") {
+        else if (answer.choice === "View") {
             viewList();
         }
-        else if (answer.option === "Update") {
+        else if (answer.choice === "Update") {
             updateList();
         }
         else {
@@ -79,6 +79,67 @@ const init = () => {
         }
     });
 };
+
+const connectionView = (queryString) => {
+    connection.query(queryString, (err, results) => {
+        if (err) throw err;
+        console.table(results)
+        start();
+    })
+};
+
+
+const viewList = () => {
+    let queryString = ""
+    inquirer.prompt(
+        {
+            type: "list",
+            name: "viewType",
+            message: "Please select a Category to View",
+            choices: [
+                "Role",
+                "Employee Name",
+                "Manager"
+            ]
+        }
+    ).then((answer) => {
+        if (answer.viewType === "Employee Name") {
+            queryString = "SELECT CONCAT_WS(', ', employee.first_name, employee.last_name) AS `Name`, role.title AS `Role`,role.salary AS `Salary`, department.name AS `Department`, CONCAT_WS(', ', managerInfo.first_name, managerInfo.last_name) AS `Manager` FROM employee INNER JOIN role ON employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee AS managerInfo on employee.manager_id = managerInfo.id ORDER by `Name`"
+            console.log(`~* Listing Employees Alphabetically *~`);
+            connectionView(queryString);
+        }
+        else if (answer.viewType === "Role") {
+            queryString = "SELECT role.id AS `ID`,  role.title AS `Role`, role.salary AS `Salary`, department.name AS `Department` FROM role INNER JOIN department on role.department_id = department.id ORDER BY `ID`"
+            console.log(`~* Listing Roles in Numerical Order *~`);
+            connectionView(queryString);
+        }
+        else if (answer.viewType === "Manager") {
+            queryString = "SELECT department.id AS `ID`, department.name AS `Department` FROM department ORDER BY `ID`"
+            console.log(`~* Listing Departments in Numerical Order *~`);
+            connectionView(queryString);
+        }
+        else {
+            byMgmt()
+        };
+    });
+};
+
+
+const byMgmt =() => {
+    inquirer.prompt({
+        type: "list",
+        name: "mgmt",
+        choices: mgmtArray,
+        message: "Select a Manager to Order By"
+    }).then((answer) => {
+        let answerArrayMgmt = answer.mgmt.split(":").join(",").split(", ")
+        const queryString = `SELECT CONCAT_WS(', ', employee.first_name, employee.last_name) AS 'Name', role.title AS 'Role', role.salary AS 'Salary', department.name AS 'Department', CONCAT_WS(', ', managerInfo.first_name, managerInfo.last_name,) AS 'Manager' FROM employee INNER JOIN role ON employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee AS managerInfo on employee.manager_id = managerInfo.id WHERE employee.manager_id = '${answerArrayMgmt[0]}' ORDER by 'Name'`
+        console.log(`~* Listing ${answerArrayMgmt[1]} ${answerArrayMgmt[2]}'s Subordinates *~`);
+        connectionView(queryString);
+    })
+}
+
+
 
 const updateList = () => {
     inquirer.prompt({
@@ -103,7 +164,7 @@ const updateRole = () => {
     inquirer.prompt([
         {
             type: "list",
-            name: "option",
+            name: "choice",
             choices: employeeArray,
             message: "Select an Employee to Update",
         },
@@ -132,16 +193,49 @@ const updateRole = () => {
                 if (err) throw err;
                 console.log(`~* ${employeeAns[1]} ${employeeAns[2]}'s role is now ${roleAns[1]} *~`);
 
-                initQueries();
+                start();
             }
         );
     });
 };
 
+const updateMgmt = () => {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "choice",
+            choices: employeeArray,
+            message: "Select an Employee to Update",
+        },
+        {
+            name: "newMgmt",
+            type: "list",
+            choices: mgmtArray,
+            message: "Please select the Employee's New Manager"
+        }
+    ]).then((answer) => {
+        let answerArrayChoice = answer.choice.split(":").join(",").split(", ")
+        let answerArrayMgmt = answer.mgmtArray.split(":").join(",").split(", ")
+        const query = connection.query(
+            "UPDATE employee SET ? WHERE ?", [
+            {
+                manager_id: answerArrayMgmt[0]
+            },
+            {
+                id: answerArrayChoice[0]
+            }
+        ], (err, res) => {
+            if (err) throw err;
+            console.log(`~* ${answerArrayChoice[1]} ${answerArrayChoice[2]}'s New Manager is ${answerArrayMgmt[1]} ${answerArrayMgmt[2]} *~`);
 
+            start();
+        }
+        );
+    });
+};
 
 
 connection.connect((err) => {
     if (err) throw err;
-    initQueries()
+    start()
 });
