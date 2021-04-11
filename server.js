@@ -99,7 +99,7 @@ const viewList = () => {
             choices: [
                 "Role",
                 "Employee Name",
-                "Manager"
+                "Departments"
             ]
         }
     ).then((answer) => {
@@ -113,7 +113,7 @@ const viewList = () => {
             console.log(`~* Listing Roles in Numerical Order *~`);
             connectionView(queryString);
         }
-        else if (answer.viewType === "Manager") {
+        else if (answer.viewType === "Departments") {
             queryString = "SELECT department.id AS `ID`, department.name AS `Department` FROM department ORDER BY `ID`"
             console.log(`~* Listing Departments in Numerical Order *~`);
             connectionView(queryString);
