@@ -57,7 +57,7 @@ const init = () => {
     inquirer.prompt({
         type: "list",
         name: "choice",
-        message: "Where would you like to start?",
+        message: "Please select an Action",
         choices: [
             "Add",
             "View",
@@ -99,6 +99,7 @@ const viewList = () => {
             choices: [
                 "Role",
                 "Employee Name",
+                "Managers",
                 "Departments"
             ]
         }
@@ -125,19 +126,19 @@ const viewList = () => {
 };
 
 
-const byMgmt =() => {
+const byMgmt = () => {
     inquirer.prompt({
         type: "list",
-        name: "mgmt",
+        name: "manager",
         choices: mgmtArray,
         message: "Select a Manager to Order By"
     }).then((answer) => {
-        let answerArrayMgmt = answer.mgmt.split(":").join(",").split(", ")
+        let answerArrayMgmt = answer.manager.split(":").join(",").split(", ")
         const queryString = `SELECT CONCAT_WS(', ', employee.first_name, employee.last_name) AS 'Name', role.title AS 'Role', role.salary AS 'Salary', department.name AS 'Department', CONCAT_WS(', ', managerInfo.first_name, managerInfo.last_name,) AS 'Manager' FROM employee INNER JOIN role ON employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee AS managerInfo on employee.manager_id = managerInfo.id WHERE employee.manager_id = '${answerArrayMgmt[0]}' ORDER by 'Name'`
         console.log(`~* Listing ${answerArrayMgmt[1]} ${answerArrayMgmt[2]}'s Subordinates *~`);
         connectionView(queryString);
-    })
-}
+    });
+};
 
 
 
@@ -231,6 +232,120 @@ const updateMgmt = () => {
             start();
         }
         );
+    });
+};
+
+const addToList = () => {
+    inquirer.prompt({
+        name: "addNew",
+        type: "list",
+        message: "Please select a New Item to Create",
+        choices: ["Employee", "Role", "Department"]
+    }).then((answer) => {
+        if (answer.addNew === "Employee") {
+            newEmployee();
+        }
+        else if (answer.addNew === "Role") {
+            newRole();
+        }
+        else if (answer.addNew === "Department") {
+            newDept();
+        }
+    });
+};
+
+const newEmployee = () => {
+    inquirer.prompt([
+        {
+            name: "first_name",
+            type: "input",
+            message: "Enter New Employee's First Name: "
+        },
+        {
+            name: "last_name",
+            type: "input",
+            message: "Enter New Employee's Last Name: "
+        },
+        {
+            name: "role_id",
+            type: "list",
+            choices: roleArray,
+            message: "Please select New Employee's Role"
+        },
+        {
+            name: "manager_id",
+            type: "list",
+            choices: mgmtArray,
+            message: "Please select New Employee's Manager"
+        }
+    ]).then((answer) => {
+        console.log(`~* New Employee ${answer.first_name} ${answer.last_name} is Being Added to Roster *~`);
+        connection.query("INSERT INTO employee SET ?",
+            {
+                first_name: answer.first_name,
+                last_name: answer.last_name,
+                role_id: answer.role_id.split(":").join(",").split(", ")[0],
+                manager_id: answer.role_id.split(":").join(",").split(", ")[0],
+
+            }, (err) => {
+                if (err) throw err;
+                console.log("~* New Employee Added Successfully *~");
+                start();
+            });
+    });
+};
+
+const newRole = () => {
+    inquirer.prompt([
+        {
+            name: "role_title",
+            type: "input",
+            message: "Please provide the New Role Title"
+        },
+        {
+            name: "salary",
+            type: "input",
+            message: "Please provide the New Role Salary"
+        },
+        {
+            name: "dept_id",
+            type: "list",
+            choices: deptArray,
+            message: "Please provide the New Role's Department"
+        }
+    ]).then((answer) => {
+        console.log(`~* New Role ${answer.role_title} is Being Added to Roster *~`);
+        connection.query("INSERT INTO role SET ?",
+            {
+                title: answer.role_title,
+                salary: answer.salary,
+                dept_id: answer.dept_id.split(":").join(",").split(", ")[0]
+            }, (err) => {
+                if (err) throw err;
+                console.log("~* New Role Added Successfully *~");
+                start();
+            });
+    });
+};
+
+
+
+const newDept = () => {
+    inquirer.prompt([
+        {
+            name: "dept_name",
+            type: "input",
+            message: "Please provide New Department Name"
+        }
+    ]).then((answer) => {
+        console.log(`~* New Department ${answer.dept_name} is Being Added to Roster *~`);
+        connection.query("INSERT INTO department SET ?", {
+            name: answer.dept_name
+        }, (err) => {
+            if (err) throw err;
+            console.log("~* New Department Added Successfully *~");
+            start();
+        });
     });
 };
 

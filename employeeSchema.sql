@@ -27,7 +27,7 @@ CREATE TABLE employee (
 );
 
 INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES
-    ("Sapphire", "Dillon", 1, NULL),
+    ("Sapphire", "Dillon", 1, 1),
     ("Dainton", "Powell", 2, 1),
     ("Raul", "Lacey", 3, 2),
     ("Yaqub", "Feeney", 3, 2),
